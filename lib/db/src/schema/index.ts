@@ -2,3 +2,7 @@ export * from "./accounts";
 export * from "./portfolios";
 export * from "./holdings";
 export * from "./transactions";
+// Investment platform tables
+export * from "./users";
+export * from "./investments";
+export * from "./user-transactions";
