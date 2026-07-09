@@ -1,3 +1,6 @@
 - [Aiven SSL fix](aiven-ssl.md) — pg v8+ maps sslmode=require→verify-full; strip params + use uselibpqcompat=true for drizzle-kit, rejectUnauthorized:false for pool.
 - [Migration baseline strategy](migration-baseline.md) — schema bootstrapped via push; 0000 migration is a no-op marker so future generate+migrate runs are additive.
 - [password_hash exposure](password-hash.md) — selectUserSchema includes passwordHash; always use selectPublicUserSchema / PublicUser for API responses.
+- [Auth middleware pattern](auth-middleware.md) — JWT payload stored in res.locals (not req augmentation) to avoid tsconfig "types" conflict; use authedUser(res) helper.
+- [Profit credit concurrency](profit-credit-concurrency.md) — optimistic lock on last_credited_at; advance base by exact credited days, not now(), to preserve fractional remainder.
+- [lib/db dist rebuild](lib-db-rebuild.md) — after adding new schema files, must run tsc in lib/db before api-server typecheck resolves new exports.
