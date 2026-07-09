@@ -4,16 +4,22 @@
  * For each active investment:
  *   1. Calculate elapsed whole days since last_credited_at (or start_date).
  *   2. Compute profit = amount_invested × daily_profit_rate × elapsed_days.
- *   3. In a single DB transaction:
- *        a. Add profit to the user's balance_etb.
- *        b. Record a user_transaction of type "profit".
- *        c. Update investment.last_credited_at to now.
+ *   3. In a single DB transaction with optimistic concurrency control:
+ *        a. Conditionally update last_credited_at — only if it still matches
+ *           the value we read. If another concurrent request already credited,
+ *           this update hits 0 rows and the operation is safely skipped.
+ *        b. Add profit to the user's balance_etb.
+ *        c. Record a user_transaction of type "profit".
  *
- * All monetary arithmetic is done with JavaScript numbers then converted back
- * to 2-decimal-place strings.  For a future high-precision requirement, swap
- * to a decimal library (e.g. "decimal.js").
+ * Fractional-day carryover:
+ *   last_credited_at is advanced by exactly (daysElapsed × 24 h) from the
+ *   credit base, not set to `now`.  This preserves the fractional remainder
+ *   so it is included in the next credit run instead of being silently lost.
+ *
+ *   Example: 1.8 days elapsed → credit 1 day, advance base by 24 h.
+ *   Next run the 0.8-day remainder is included in the elapsed calculation.
  */
-import { eq, and, sql } from "drizzle-orm";
+import { eq, and, isNull, sql } from "drizzle-orm";
 import {
   db,
   investmentsTable,
@@ -96,24 +102,56 @@ export function previewProfits(investments: Investment[]): ProfitPreview[] {
 
 /**
  * Credit pending profits for a single active investment.
- * Skips (returns null) when 0 whole days have elapsed.
  *
- * Runs inside a DB transaction to ensure the balance update,
- * transaction record, and last_credited_at update are atomic.
+ * Uses optimistic concurrency control: the `last_credited_at` update is
+ * conditional on the column still matching the value we read before entering
+ * the transaction.  If two requests race, only one succeeds — the other
+ * finds 0 updated rows and returns null safely.
+ *
+ * Returns null when:
+ *   - The investment is not active
+ *   - Fewer than 1 full day has elapsed
+ *   - A concurrent request already credited this investment
  */
 export async function creditOneInvestment(
   investment: Investment,
 ): Promise<CreditResult | null> {
   if (investment.status !== "active") return null;
 
-  const { daysElapsed, profit } = computePendingProfit(investment);
+  const { daysElapsed, profit, creditBase } = computePendingProfit(investment);
   if (daysElapsed === 0 || profit <= 0) return null;
 
   const profitStr = toNumericStr(profit);
   const now = new Date();
 
+  // Advance the credit base by exactly the credited days — preserves the
+  // fractional remainder for the next run instead of discarding it.
+  const newLastCreditedAt = new Date(
+    creditBase.getTime() + daysElapsed * MS_PER_DAY,
+  );
+
   return await db.transaction(async (tx) => {
-    // 1. Credit the user's balance atomically at the DB level
+    // ── Step 1: Conditional update (optimistic lock) ──────────────────────
+    // Match last_credited_at to the exact value we computed from.
+    // If another concurrent call already advanced it, this hits 0 rows
+    // and we bail out cleanly without double-crediting.
+    const condition = and(
+      eq(investmentsTable.id, investment.id),
+      investment.lastCreditedAt != null
+        ? eq(investmentsTable.lastCreditedAt, investment.lastCreditedAt)
+        : isNull(investmentsTable.lastCreditedAt),
+    );
+
+    const [locked] = await tx
+      .update(investmentsTable)
+      .set({ lastCreditedAt: newLastCreditedAt, updatedAt: now })
+      .where(condition)
+      .returning({ id: investmentsTable.id });
+
+    // Another concurrent credit already ran — skip without error
+    if (!locked) return null;
+
+    // ── Step 2: Credit balance ────────────────────────────────────────────
     await tx
       .update(usersTable)
       .set({
@@ -121,7 +159,7 @@ export async function creditOneInvestment(
       })
       .where(eq(usersTable.id, investment.userId));
 
-    // 2. Record the profit transaction
+    // ── Step 3: Record the transaction ───────────────────────────────────
     const [txRecord] = await tx
       .insert(userTransactionsTable)
       .values({
@@ -132,12 +170,6 @@ export async function creditOneInvestment(
         timestamp: now,
       })
       .returning();
-
-    // 3. Mark credit time so the next run doesn't re-credit the same days
-    await tx
-      .update(investmentsTable)
-      .set({ lastCreditedAt: now, updatedAt: now })
-      .where(eq(investmentsTable.id, investment.id));
 
     return {
       investmentId: investment.id,
@@ -151,6 +183,8 @@ export async function creditOneInvestment(
 /**
  * Credit all pending profits for active investments belonging to a specific user.
  * Returns an array of results for investments that had ≥ 1 day pending.
+ * Concurrent duplicate calls are safe — the optimistic lock in creditOneInvestment
+ * ensures each investment is credited at most once per day window.
  */
 export async function creditProfitsForUser(userId: string): Promise<CreditResult[]> {
   const investments = await db
