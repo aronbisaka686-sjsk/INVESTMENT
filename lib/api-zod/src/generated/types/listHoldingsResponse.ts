@@ -5,7 +5,6 @@
  * Investment Platform API
  * OpenAPI spec version: 0.1.0
  */
+import type { HoldingResponse } from './holdingResponse';
 
-export interface HealthStatus {
-  status: string;
-}
+export type ListHoldingsResponse = HoldingResponse[];

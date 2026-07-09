@@ -3,13 +3,22 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Investment Platform API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: accounts
+    description: Investor account management
+  - name: portfolios
+    description: Portfolio management
+  - name: holdings
+    description: Portfolio holdings (asset positions)
+  - name: transactions
+    description: Investment transaction history
+
 paths:
   /healthz:
     get:
@@ -24,7 +33,415 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  # ── Accounts ────────────────────────────────────────────────────────────────
+  /accounts:
+    get:
+      operationId: listAccounts
+      tags: [accounts]
+      summary: List all investor accounts
+      responses:
+        "200":
+          description: List of accounts
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListAccountsResponse"
+    post:
+      operationId: createAccount
+      tags: [accounts]
+      summary: Create a new investor account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateAccountBody"
+      responses:
+        "201":
+          description: Account created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccountResponse"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Email already in use
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /accounts/{id}:
+    get:
+      operationId: getAccount
+      tags: [accounts]
+      summary: Get an investor account by ID
+      parameters:
+        - $ref: "#/components/parameters/UuidId"
+      responses:
+        "200":
+          description: Account record
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccountResponse"
+        "404":
+          description: Account not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    patch:
+      operationId: updateAccount
+      tags: [accounts]
+      summary: Update an investor account
+      parameters:
+        - $ref: "#/components/parameters/UuidId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateAccountBody"
+      responses:
+        "200":
+          description: Updated account
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccountResponse"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Account not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      operationId: deleteAccount
+      tags: [accounts]
+      summary: Delete an investor account
+      parameters:
+        - $ref: "#/components/parameters/UuidId"
+      responses:
+        "204":
+          description: Account deleted
+        "404":
+          description: Account not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  # ── Portfolios ───────────────────────────────────────────────────────────────
+  /portfolios:
+    get:
+      operationId: listPortfolios
+      tags: [portfolios]
+      summary: List portfolios
+      parameters:
+        - name: accountId
+          in: query
+          schema:
+            type: string
+          description: Filter by account ID
+      responses:
+        "200":
+          description: List of portfolios
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListPortfoliosResponse"
+    post:
+      operationId: createPortfolio
+      tags: [portfolios]
+      summary: Create a new portfolio
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreatePortfolioBody"
+      responses:
+        "201":
+          description: Portfolio created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PortfolioResponse"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /portfolios/{id}:
+    get:
+      operationId: getPortfolio
+      tags: [portfolios]
+      summary: Get a portfolio by ID
+      parameters:
+        - $ref: "#/components/parameters/UuidId"
+      responses:
+        "200":
+          description: Portfolio record
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PortfolioResponse"
+        "404":
+          description: Portfolio not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    patch:
+      operationId: updatePortfolio
+      tags: [portfolios]
+      summary: Update a portfolio
+      parameters:
+        - $ref: "#/components/parameters/UuidId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdatePortfolioBody"
+      responses:
+        "200":
+          description: Updated portfolio
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PortfolioResponse"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Portfolio not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      operationId: deletePortfolio
+      tags: [portfolios]
+      summary: Delete a portfolio
+      parameters:
+        - $ref: "#/components/parameters/UuidId"
+      responses:
+        "204":
+          description: Portfolio deleted
+        "404":
+          description: Portfolio not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  # ── Holdings ─────────────────────────────────────────────────────────────────
+  /holdings:
+    get:
+      operationId: listHoldings
+      tags: [holdings]
+      summary: List holdings
+      parameters:
+        - name: portfolioId
+          in: query
+          schema:
+            type: string
+          description: Filter by portfolio ID
+      responses:
+        "200":
+          description: List of holdings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListHoldingsResponse"
+    post:
+      operationId: createHolding
+      tags: [holdings]
+      summary: Add a holding to a portfolio
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateHoldingBody"
+      responses:
+        "201":
+          description: Holding created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HoldingResponse"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /holdings/{id}:
+    get:
+      operationId: getHolding
+      tags: [holdings]
+      summary: Get a holding by ID
+      parameters:
+        - $ref: "#/components/parameters/UuidId"
+      responses:
+        "200":
+          description: Holding record
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HoldingResponse"
+        "404":
+          description: Holding not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    patch:
+      operationId: updateHolding
+      tags: [holdings]
+      summary: Update a holding (e.g. quantity, cost basis)
+      parameters:
+        - $ref: "#/components/parameters/UuidId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateHoldingBody"
+      responses:
+        "200":
+          description: Updated holding
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HoldingResponse"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Holding not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      operationId: deleteHolding
+      tags: [holdings]
+      summary: Remove a holding from a portfolio
+      parameters:
+        - $ref: "#/components/parameters/UuidId"
+      responses:
+        "204":
+          description: Holding removed
+        "404":
+          description: Holding not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  # ── Transactions ─────────────────────────────────────────────────────────────
+  /transactions:
+    get:
+      operationId: listTransactions
+      tags: [transactions]
+      summary: List transactions
+      parameters:
+        - name: portfolioId
+          in: query
+          schema:
+            type: string
+          description: Filter by portfolio ID
+        - name: ticker
+          in: query
+          schema:
+            type: string
+          description: Filter by ticker symbol
+      responses:
+        "200":
+          description: List of transactions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListTransactionsResponse"
+    post:
+      operationId: createTransaction
+      tags: [transactions]
+      summary: Record a new transaction
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTransactionBody"
+      responses:
+        "201":
+          description: Transaction recorded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TransactionResponse"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /transactions/{id}:
+    get:
+      operationId: getTransaction
+      tags: [transactions]
+      summary: Get a transaction by ID
+      parameters:
+        - $ref: "#/components/parameters/UuidId"
+      responses:
+        "200":
+          description: Transaction record
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TransactionResponse"
+        "404":
+          description: Transaction not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
 components:
+  parameters:
+    UuidId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+
   schemas:
     HealthStatus:
       type: object
@@ -34,3 +451,264 @@ components:
       required:
         - status
 
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
+
+    # ── Account schemas ────────────────────────────────────────────────────────
+    AccountResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+        fullName:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - email
+        - fullName
+        - createdAt
+        - updatedAt
+
+    ListAccountsResponse:
+      type: array
+      items:
+        $ref: "#/components/schemas/AccountResponse"
+
+    CreateAccountBody:
+      type: object
+      properties:
+        email:
+          type: string
+        fullName:
+          type: string
+          minLength: 1
+      required:
+        - email
+        - fullName
+
+    UpdateAccountBody:
+      type: object
+      properties:
+        email:
+          type: string
+        fullName:
+          type: string
+          minLength: 1
+
+    # ── Portfolio schemas ──────────────────────────────────────────────────────
+    PortfolioResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        accountId:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - accountId
+        - name
+        - createdAt
+        - updatedAt
+
+    ListPortfoliosResponse:
+      type: array
+      items:
+        $ref: "#/components/schemas/PortfolioResponse"
+
+    CreatePortfolioBody:
+      type: object
+      properties:
+        accountId:
+          type: string
+        name:
+          type: string
+          minLength: 1
+        description:
+          type: string
+          nullable: true
+      required:
+        - accountId
+        - name
+
+    UpdatePortfolioBody:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+        description:
+          type: string
+          nullable: true
+
+    # ── Holding schemas ────────────────────────────────────────────────────────
+    AssetType:
+      type: string
+      enum: [stock, etf, crypto, bond, commodity, other]
+
+    HoldingResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        portfolioId:
+          type: string
+        ticker:
+          type: string
+        assetType:
+          $ref: "#/components/schemas/AssetType"
+        quantity:
+          type: string
+        avgCostBasis:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - portfolioId
+        - ticker
+        - assetType
+        - quantity
+        - createdAt
+        - updatedAt
+
+    ListHoldingsResponse:
+      type: array
+      items:
+        $ref: "#/components/schemas/HoldingResponse"
+
+    CreateHoldingBody:
+      type: object
+      properties:
+        portfolioId:
+          type: string
+        ticker:
+          type: string
+          minLength: 1
+        assetType:
+          $ref: "#/components/schemas/AssetType"
+        quantity:
+          type: string
+        avgCostBasis:
+          type: string
+          nullable: true
+      required:
+        - portfolioId
+        - ticker
+        - assetType
+        - quantity
+
+    UpdateHoldingBody:
+      type: object
+      properties:
+        quantity:
+          type: string
+        avgCostBasis:
+          type: string
+          nullable: true
+
+    # ── Transaction schemas ────────────────────────────────────────────────────
+    TransactionType:
+      type: string
+      enum: [buy, sell, dividend, deposit, withdrawal]
+
+    TransactionResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        portfolioId:
+          type: string
+        ticker:
+          type: string
+        transactionType:
+          $ref: "#/components/schemas/TransactionType"
+        quantity:
+          type: string
+          nullable: true
+        pricePerUnit:
+          type: string
+        totalAmount:
+          type: string
+        notes:
+          type: string
+          nullable: true
+        transactedAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - portfolioId
+        - ticker
+        - transactionType
+        - pricePerUnit
+        - totalAmount
+        - transactedAt
+        - createdAt
+
+    ListTransactionsResponse:
+      type: array
+      items:
+        $ref: "#/components/schemas/TransactionResponse"
+
+    CreateTransactionBody:
+      type: object
+      properties:
+        portfolioId:
+          type: string
+        ticker:
+          type: string
+          minLength: 1
+        transactionType:
+          $ref: "#/components/schemas/TransactionType"
+        quantity:
+          type: string
+          nullable: true
+        pricePerUnit:
+          type: string
+        totalAmount:
+          type: string
+        notes:
+          type: string
+          nullable: true
+        transactedAt:
+          type: string
+          format: date-time
+      required:
+        - portfolioId
+        - ticker
+        - transactionType
+        - pricePerUnit
+        - totalAmount
+        - transactedAt

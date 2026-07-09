@@ -1,45 +1,75 @@
-# [Project name]
+# Investment Platform API
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+A RESTful backend API for an investment platform. Manages investor accounts, portfolios, asset holdings, and transaction history. Frontend is hosted separately on GitHub Pages.
 
 ## Run & Operate
 
-- `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
+- `pnpm --filter @workspace/api-server run dev` — run the API server (port from `$PORT`)
 - `pnpm run typecheck` — full typecheck across all packages
 - `pnpm run build` — typecheck + build all packages
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
-- `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- Required env: `DATABASE_URL` — Postgres connection string
+- `pnpm --filter @workspace/db run push` — push DB schema changes to Aiven PostgreSQL (dev only)
+
+## Required Environment Variables
+
+Set these as Replit Secrets:
+
+| Variable | Description |
+|---|---|
+| `AIVEN_DATABASE_URL` | Aiven PostgreSQL connection string (takes priority over `DATABASE_URL`). Format: `postgresql://user:pass@host:port/db?sslmode=require` |
+
+See `.env.example` for the full list and format.
 
 ## Stack
 
 - pnpm workspaces, Node.js 24, TypeScript 5.9
 - API: Express 5
-- DB: PostgreSQL + Drizzle ORM
-- Validation: Zod (`zod/v4`), `drizzle-zod`
-- API codegen: Orval (from OpenAPI spec)
+- DB: Aiven PostgreSQL + Drizzle ORM (SSL enabled by default)
+- Validation: Zod (Orval-generated schemas from OpenAPI spec)
+- API codegen: Orval (from `lib/api-spec/openapi.yaml`)
 - Build: esbuild (CJS bundle)
 
-## Where things live
+## Where Things Live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- `lib/api-spec/openapi.yaml` — OpenAPI contract (source of truth for all routes)
+- `lib/api-zod/src/generated/api.ts` — Generated Zod validation schemas
+- `lib/api-client-react/src/generated/` — Generated React Query hooks (for a future frontend)
+- `lib/db/src/schema/` — Drizzle ORM table definitions
+  - `accounts.ts` — investor accounts
+  - `portfolios.ts` — investment portfolios
+  - `holdings.ts` — asset positions within a portfolio
+  - `transactions.ts` — buy/sell/dividend transaction history
+- `artifacts/api-server/src/routes/` — Express route handlers
+- `artifacts/api-server/src/middlewares/errorHandler.ts` — global error handler
 
-## Architecture decisions
+## API Endpoints
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+| Method | Path | Description |
+|---|---|---|
+| GET | `/api/healthz` | Health check |
+| GET/POST | `/api/accounts` | List / create accounts |
+| GET/PATCH/DELETE | `/api/accounts/:id` | Read / update / delete account |
+| GET/POST | `/api/portfolios` | List (filter by `?accountId=`) / create |
+| GET/PATCH/DELETE | `/api/portfolios/:id` | Read / update / delete portfolio |
+| GET/POST | `/api/holdings` | List (filter by `?portfolioId=`) / add holding |
+| GET/PATCH/DELETE | `/api/holdings/:id` | Read / update / delete holding |
+| GET/POST | `/api/transactions` | List (filter by `?portfolioId=&ticker=`) / record |
+| GET | `/api/transactions/:id` | Read transaction |
 
-## Product
+## Architecture Decisions
 
-_Describe the high-level user-facing capabilities of this app once they exist._
-
-## User preferences
-
-_Populate as you build — explicit user instructions worth remembering across sessions._
+- **OpenAPI-first**: `lib/api-spec/openapi.yaml` is the source of truth. Edit the spec, run codegen, then implement the route. Never drift routes from the contract.
+- **Aiven SSL**: DB pool has `ssl: { rejectUnauthorized: false }` enabled by default for Aiven compatibility. Set `DATABASE_SSL=false` only for local non-SSL dev.
+- **Startup DB check**: Server calls `connectDb()` and exits if the DB is unreachable, providing a clear error rather than a silent query failure.
+- **CORS**: Configured to allow `*.github.io` origins and localhost. Add custom domains in `artifacts/api-server/src/app.ts` `allowedOrigins`.
+- **Numeric fields as strings**: `quantity`, `pricePerUnit`, `totalAmount`, and `avgCostBasis` are stored as PostgreSQL `numeric` and returned as strings to avoid floating-point precision loss.
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
+- Run codegen after any OpenAPI spec change: `pnpm --filter @workspace/api-spec run codegen`
+- `DATABASE_URL` is managed by Replit's built-in database. Use `AIVEN_DATABASE_URL` for your Aiven database.
+- Run `pnpm --filter @workspace/db run push` to apply schema changes to the database before testing routes.
 
-## Pointers
+## User Preferences
 
-- See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details
+_Populate as you build — explicit user instructions worth remembering across sessions._

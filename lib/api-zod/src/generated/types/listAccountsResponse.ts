@@ -5,7 +5,6 @@
  * Investment Platform API
  * OpenAPI spec version: 0.1.0
  */
+import type { AccountResponse } from './accountResponse';
 
-export interface HealthStatus {
-  status: string;
-}
+export type ListAccountsResponse = AccountResponse[];
