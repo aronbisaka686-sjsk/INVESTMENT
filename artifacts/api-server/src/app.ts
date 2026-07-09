@@ -27,18 +27,27 @@ app.use(
   }),
 );
 
-// CORS — allow GitHub Pages frontend and localhost for development.
-// Add more origins here as needed (e.g. a custom domain).
-const allowedOrigins = [
-  /^https:\/\/[\w-]+\.github\.io$/,   // any GitHub Pages domain
-  /^http:\/\/localhost(:\d+)?$/,       // local dev
-  /^http:\/\/127\.0\.0\.1(:\d+)?$/,   // local dev (IP)
+// ── CORS ──────────────────────────────────────────────────────────────────────
+//
+// Allow GitHub Pages origins and localhost for development.
+//
+// Security note: credentials (cookies/auth headers) are NOT enabled here.
+// Enable them only once you have a specific, hard-coded origin — never with
+// a wildcard/regex pattern.
+//
+// To add a custom domain: push its exact origin string to allowedOrigins.
+// Example: "https://my-portfolio.example.com"
+//
+const allowedOrigins: (string | RegExp)[] = [
+  /^https:\/\/[\w-]+\.github\.io$/, // any GitHub Pages domain
+  /^http:\/\/localhost(:\d+)?$/,     // local dev
+  /^http:\/\/127\.0\.0\.1(:\d+)?$/,  // local dev (IP)
 ];
 
 app.use(
   cors({
     origin(origin, callback) {
-      // Allow requests with no origin (server-to-server, Postman, curl, etc.)
+      // Allow requests with no origin (server-to-server, curl, etc.)
       if (!origin) {
         callback(null, true);
         return;
@@ -49,10 +58,16 @@ app.use(
       if (allowed) {
         callback(null, true);
       } else {
-        callback(new Error(`CORS: origin not allowed — ${origin}`));
+        // Return a controlled 403 instead of letting Express emit a 500.
+        const err = new Error(`CORS: origin not allowed — ${origin}`) as Error & {
+          status: number;
+        };
+        err.status = 403;
+        callback(err);
       }
     },
-    credentials: true,
+    // credentials: false (default) — enable only after locking down to a
+    // specific origin and adding proper session/token auth.
   }),
 );
 
