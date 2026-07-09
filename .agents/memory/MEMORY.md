@@ -1,0 +1,3 @@
+- [Aiven SSL fix](aiven-ssl.md) — pg v8+ maps sslmode=require→verify-full; strip params + use uselibpqcompat=true for drizzle-kit, rejectUnauthorized:false for pool.
+- [Migration baseline strategy](migration-baseline.md) — schema bootstrapped via push; 0000 migration is a no-op marker so future generate+migrate runs are additive.
+- [password_hash exposure](password-hash.md) — selectUserSchema includes passwordHash; always use selectPublicUserSchema / PublicUser for API responses.
