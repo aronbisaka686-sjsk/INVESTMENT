@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Investment Dashboard</title>
+</head>
+<body>
+    <h1>Register for Dashboard</h1>
+    
+    <script>
+        // Paste the exact code from the Replit Agent below this line!
+        // Register
+const { token, user } = await fetch("/api/auth/register", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ name: "Aron", email: "...", password: "..." })
+}).then(r => r.json());
+
+// Authenticated requests
+fetch("/api/investments", {
+  headers: { Authorization: `Bearer ${token}` }
+});
+        
+    </script>
+</body>
+</html>
+
