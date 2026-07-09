@@ -38,6 +38,13 @@ export const investmentsTable = pgTable("investments", {
   updatedAt: timestamp("updated_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
+  /**
+   * Tracks when the last daily profit was credited.
+   * NULL means no profit has been credited yet (use start_date as baseline).
+   */
+  lastCreditedAt: timestamp("last_credited_at", {
+    withTimezone: true,
+  }),
 });
 
 // ── Zod schemas ──────────────────────────────────────────────────────────────

@@ -1,0 +1,1 @@
+ALTER TABLE "investments" ADD COLUMN "last_credited_at" timestamp with time zone;

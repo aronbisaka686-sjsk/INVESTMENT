@@ -8,6 +8,13 @@
       "when": 1783572463304,
       "tag": "0000_kind_ultron",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1783573142259,
+      "tag": "0001_easy_bruce_banner",
+      "breakpoints": true
     }
   ]
 }
