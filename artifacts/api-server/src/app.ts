@@ -29,19 +29,13 @@ app.use(
 
 // ── CORS ──────────────────────────────────────────────────────────────────────
 //
-// Allow GitHub Pages origins and localhost for development.
-//
-// Security note: credentials (cookies/auth headers) are NOT enabled here.
-// Enable them only once you have a specific, hard-coded origin — never with
-// a wildcard/regex pattern.
-//
-// To add a custom domain: push its exact origin string to allowedOrigins.
-// Example: "https://my-portfolio.example.com"
+// Production origin is locked to the GitHub Pages site.
+// Localhost variants are kept for local development.
 //
 const allowedOrigins: (string | RegExp)[] = [
-  /^https:\/\/[\w-]+\.github\.io$/, // any GitHub Pages domain
-  /^http:\/\/localhost(:\d+)?$/,     // local dev
-  /^http:\/\/127\.0\.0\.1(:\d+)?$/,  // local dev (IP)
+  "https://aronbisaka686-sjsk.github.io", // production — GitHub Pages
+  /^http:\/\/localhost(:\d+)?$/,           // local dev
+  /^http:\/\/127\.0\.0\.1(:\d+)?$/,        // local dev (IP)
 ];
 
 app.use(
@@ -66,8 +60,7 @@ app.use(
         callback(err);
       }
     },
-    // credentials: false (default) — enable only after locking down to a
-    // specific origin and adding proper session/token auth.
+    credentials: true, // allows Authorization header to be read by the browser
   }),
 );
 
