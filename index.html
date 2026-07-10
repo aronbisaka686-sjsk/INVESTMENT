@@ -8,20 +8,29 @@
     <h1>Register for Dashboard</h1>
     
     <script>
-        // Paste the exact code from the Replit Agent below this line!
-        // Register
-const { token, user } = await fetch("/api/auth/register", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({ name: "Aron", email: "...", password: "..." })
-}).then(r => r.json());
+    // 1. Define your exact Replit API URL
+    const API = "https://4b2a375c-8246-4ee3-8c0f-0177b91fba1d-00-2dhlyjwainwwo.picard.replit.dev/api";
 
-// Authenticated requests
-fetch("/api/investments", {
-  headers: { Authorization: `Bearer ${token}` }
-});
+    // 2. Register a new user
+    async function registerUser() {
+        const res = await fetch(`${API}/auth/register`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ 
+                name: "Aron", 
+                email: "test@test.com", 
+                password: "secretpassword123" 
+            })
+        });
         
-    </script>
+        const data = await res.json();
+        console.log("Registration Response:", data);
+    }
+    
+    // Run the registration test
+    registerUser();
+</script>
+
 </body>
 </html>
 
