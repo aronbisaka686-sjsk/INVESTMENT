@@ -1,36 +1,440 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Investment Dashboard</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Investment Platform</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0d1117;
+      --surface:   #161b22;
+      --border:    #30363d;
+      --accent:    #3fb950;
+      --accent-dk: #2ea043;
+      --text:      #e6edf3;
+      --muted:     #8b949e;
+      --danger:    #f85149;
+      --radius:    10px;
+      --shadow:    0 8px 32px rgba(0,0,0,.45);
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      width: 100%;
+      max-width: 400px;
+      padding: 2rem;
+    }
+
+    .logo { text-align: center; margin-bottom: 1.5rem; }
+    .logo svg { width: 44px; height: 44px; }
+    .logo h1 {
+      font-size: 1.35rem;
+      font-weight: 700;
+      margin-top: .5rem;
+      letter-spacing: -.3px;
+    }
+    .logo span { color: var(--accent); }
+
+    .tabs {
+      display: flex;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 4px;
+      margin-bottom: 1.75rem;
+    }
+    .tab {
+      flex: 1;
+      padding: .5rem;
+      background: none;
+      border: none;
+      border-radius: 7px;
+      color: var(--muted);
+      font-size: .9rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background .15s, color .15s;
+    }
+    .tab.active {
+      background: var(--surface);
+      color: var(--text);
+      box-shadow: 0 1px 4px rgba(0,0,0,.3);
+    }
+
+    .form-group { margin-bottom: 1rem; }
+    label {
+      display: block;
+      font-size: .82rem;
+      font-weight: 600;
+      color: var(--muted);
+      margin-bottom: .4rem;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+    }
+    input {
+      width: 100%;
+      padding: .65rem .85rem;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      color: var(--text);
+      font-size: .95rem;
+      outline: none;
+      transition: border-color .15s;
+    }
+    input:focus { border-color: var(--accent); }
+    input::placeholder { color: var(--muted); opacity: .6; }
+
+    .btn {
+      width: 100%;
+      padding: .7rem;
+      background: var(--accent);
+      color: #0d1117;
+      border: none;
+      border-radius: 7px;
+      font-size: .95rem;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: .5rem;
+      transition: background .15s, opacity .15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: .5rem;
+    }
+    .btn:hover:not(:disabled) { background: var(--accent-dk); }
+    .btn:disabled { opacity: .55; cursor: not-allowed; }
+
+    .alert {
+      border-radius: 7px;
+      padding: .65rem .9rem;
+      font-size: .875rem;
+      margin-bottom: 1rem;
+      display: none;
+    }
+    .alert.error   { background: rgba(248,81,73,.12); border: 1px solid rgba(248,81,73,.35); color: #f85149; }
+    .alert.success { background: rgba(63,185,80,.12);  border: 1px solid rgba(63,185,80,.35);  color: var(--accent); }
+    .alert.show { display: block; }
+
+    .spinner {
+      width: 16px; height: 16px;
+      border: 2px solid rgba(0,0,0,.3);
+      border-top-color: #0d1117;
+      border-radius: 50%;
+      animation: spin .6s linear infinite;
+      display: none;
+    }
+    .btn.loading .spinner  { display: block; }
+    .btn.loading .btn-label { display: none; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    #dashboard { display: none; width: 100%; max-width: 520px; }
+
+    .dash-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.5rem;
+    }
+    .dash-header h2   { font-size: 1.15rem; font-weight: 700; }
+    .dash-header span { font-size: .82rem; color: var(--muted); }
+
+    .stat-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    .stat {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.1rem 1.25rem;
+    }
+    .stat .label {
+      font-size: .78rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .5px;
+      margin-bottom: .35rem;
+    }
+    .stat .value         { font-size: 1.45rem; font-weight: 700; color: var(--accent); }
+    .stat .value.neutral { color: var(--text); }
+
+    .dash-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.25rem;
+      margin-bottom: 1rem;
+    }
+    .dash-card h3 {
+      font-size: .9rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .5px;
+      margin-bottom: .75rem;
+    }
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: .9rem;
+      padding: .35rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .info-row:last-child { border-bottom: none; }
+    .info-row .key { color: var(--muted); }
+
+    .btn-logout {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      border-radius: 7px;
+      padding: .4rem .9rem;
+      font-size: .82rem;
+      cursor: pointer;
+      transition: border-color .15s, color .15s;
+    }
+    .btn-logout:hover { border-color: var(--danger); color: var(--danger); }
+  </style>
 </head>
 <body>
-    <h1>Register for Dashboard</h1>
-    
-    <script>
-    // 1. Define your exact Replit API URL
-    const API = "https://4b2a375c-8246-4ee3-8c0f-0177b91fba1d-00-2dhlyjwainwwo.picard.replit.dev/api";
 
-    // 2. Register a new user
-    async function registerUser() {
-        const res = await fetch(`${API}/auth/register`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ 
-                name: "Aron", 
-                email: "test@test.com", 
-                password: "secretpassword123" 
-            })
-        });
-        
-        const data = await res.json();
-        console.log("Registration Response:", data);
+  <!-- Auth card -->
+  <div class="card" id="auth-card">
+    <div class="logo">
+      <svg viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="44" height="44" rx="10" fill="#161b22"/>
+        <path d="M10 32 L18 20 L24 26 L30 16 L36 24" stroke="#3fb950" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="36" cy="24" r="3" fill="#3fb950"/>
+      </svg>
+      <h1>Invest<span>ETB</span></h1>
+    </div>
+
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('login')">Sign In</button>
+      <button class="tab" onclick="switchTab('register')">Create Account</button>
+    </div>
+
+    <div id="alert" class="alert"></div>
+
+    <!-- Login form -->
+    <form id="login-form" onsubmit="handleLogin(event)">
+      <div class="form-group">
+        <label for="l-email">Email</label>
+        <input id="l-email" type="email" placeholder="you@example.com" required autocomplete="email" />
+      </div>
+      <div class="form-group">
+        <label for="l-password">Password</label>
+        <input id="l-password" type="password" placeholder="••••••••" required autocomplete="current-password" />
+      </div>
+      <button class="btn" id="login-btn" type="submit">
+        <span class="btn-label">Sign In</span>
+        <span class="spinner"></span>
+      </button>
+    </form>
+
+    <!-- Register form -->
+    <form id="register-form" style="display:none" onsubmit="handleRegister(event)">
+      <div class="form-group">
+        <label for="r-name">Full Name</label>
+        <input id="r-name" type="text" placeholder="Aron Bisaka" required autocomplete="name" />
+      </div>
+      <div class="form-group">
+        <label for="r-email">Email</label>
+        <input id="r-email" type="email" placeholder="you@example.com" required autocomplete="email" />
+      </div>
+      <div class="form-group">
+        <label for="r-password">Password</label>
+        <input id="r-password" type="password" placeholder="min. 8 characters" required minlength="8" autocomplete="new-password" />
+      </div>
+      <button class="btn" id="register-btn" type="submit">
+        <span class="btn-label">Create Account</span>
+        <span class="spinner"></span>
+      </button>
+    </form>
+  </div>
+
+  <!-- Dashboard -->
+  <div id="dashboard">
+    <div class="dash-header">
+      <div>
+        <h2 id="dash-greeting">Welcome back!</h2>
+        <span id="dash-email"></span>
+      </div>
+      <button class="btn-logout" onclick="logout()">Sign out</button>
+    </div>
+
+    <div class="stat-grid">
+      <div class="stat">
+        <div class="label">Balance (ETB)</div>
+        <div class="value" id="dash-balance">—</div>
+      </div>
+      <div class="stat">
+        <div class="label">Account Status</div>
+        <div class="value neutral" id="dash-status">Active</div>
+      </div>
+    </div>
+
+    <div class="dash-card">
+      <h3>Account Details</h3>
+      <div class="info-row">
+        <span class="key">User ID</span>
+        <span id="dash-id">—</span>
+      </div>
+      <div class="info-row">
+        <span class="key">Name</span>
+        <span id="dash-name">—</span>
+      </div>
+      <div class="info-row">
+        <span class="key">Email</span>
+        <span id="dash-detail-email">—</span>
+      </div>
+      <div class="info-row">
+        <span class="key">Member since</span>
+        <span id="dash-since">—</span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API       = "https://4b2a375c-8246-4ee3-8c0f-0177b91fba1d-00-2dhlyjwainwwo.picard.replit.dev/api";
+    const TOKEN_KEY = "invest_token";
+
+    // Restore session on page load
+    (async () => {
+      const token = localStorage.getItem(TOKEN_KEY);
+      if (!token) return;
+      try {
+        const res = await apiFetch("/auth/me", { method: "GET" });
+        if (res.ok) {
+          const { user } = await res.json();
+          showDashboard(user);
+        } else {
+          localStorage.removeItem(TOKEN_KEY);
+        }
+      } catch {
+        localStorage.removeItem(TOKEN_KEY);
+      }
+    })();
+
+    function switchTab(tab) {
+      const isLogin = tab === "login";
+      document.getElementById("login-form").style.display    = isLogin ? "" : "none";
+      document.getElementById("register-form").style.display = isLogin ? "none" : "";
+      document.querySelectorAll(".tab").forEach((el, i) => {
+        el.classList.toggle("active", isLogin ? i === 0 : i === 1);
+      });
+      hideAlert();
     }
-    
-    // Run the registration test
-    registerUser();
-</script>
 
+    function showAlert(msg, type = "error") {
+      const el = document.getElementById("alert");
+      el.textContent = msg;
+      el.className = `alert ${type} show`;
+    }
+    function hideAlert() {
+      document.getElementById("alert").className = "alert";
+    }
+
+    function setLoading(btnId, loading) {
+      const btn = document.getElementById(btnId);
+      btn.disabled = loading;
+      btn.classList.toggle("loading", loading);
+    }
+
+    function apiFetch(path, options = {}) {
+      const token = localStorage.getItem(TOKEN_KEY);
+      return fetch(API + path, {
+        ...options,
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...(options.headers || {}),
+        },
+        body: options.body ? JSON.stringify(options.body) : undefined,
+      });
+    }
+
+    async function handleRegister(e) {
+      e.preventDefault();
+      hideAlert();
+      setLoading("register-btn", true);
+      const name     = document.getElementById("r-name").value.trim();
+      const email    = document.getElementById("r-email").value.trim();
+      const password = document.getElementById("r-password").value;
+      try {
+        const res  = await apiFetch("/auth/register", { method: "POST", body: { name, email, password } });
+        const data = await res.json();
+        if (!res.ok) { showAlert(data.message || data.error || "Registration failed."); return; }
+        localStorage.setItem(TOKEN_KEY, data.token);
+        showDashboard(data.user);
+      } catch {
+        showAlert("Could not reach the server. Please try again.");
+      } finally {
+        setLoading("register-btn", false);
+      }
+    }
+
+    async function handleLogin(e) {
+      e.preventDefault();
+      hideAlert();
+      setLoading("login-btn", true);
+      const email    = document.getElementById("l-email").value.trim();
+      const password = document.getElementById("l-password").value;
+      try {
+        const res  = await apiFetch("/auth/login", { method: "POST", body: { email, password } });
+        const data = await res.json();
+        if (!res.ok) { showAlert(data.message || data.error || "Invalid email or password."); return; }
+        localStorage.setItem(TOKEN_KEY, data.token);
+        showDashboard(data.user);
+      } catch {
+        showAlert("Could not reach the server. Please try again.");
+      } finally {
+        setLoading("login-btn", false);
+      }
+    }
+
+    function showDashboard(user) {
+      document.getElementById("auth-card").style.display  = "none";
+      document.getElementById("dashboard").style.display  = "block";
+      document.getElementById("dash-greeting").textContent     = `Welcome, ${user.name}!`;
+      document.getElementById("dash-email").textContent        = user.email;
+      document.getElementById("dash-balance").textContent      =
+        parseFloat(user.balanceEtb ?? 0).toLocaleString("en-ET", { minimumFractionDigits: 2 }) + " ETB";
+      document.getElementById("dash-id").textContent           = user.id;
+      document.getElementById("dash-name").textContent         = user.name;
+      document.getElementById("dash-detail-email").textContent = user.email;
+      document.getElementById("dash-since").textContent        =
+        new Date(user.createdAt).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+    }
+
+    function logout() {
+      localStorage.removeItem(TOKEN_KEY);
+      document.getElementById("dashboard").style.display  = "none";
+      document.getElementById("auth-card").style.display  = "block";
+      ["r-name","r-email","r-password","l-email","l-password"]
+        .forEach(id => { document.getElementById(id).value = ""; });
+      switchTab("login");
+    }
+  </script>
 </body>
 </html>
-
