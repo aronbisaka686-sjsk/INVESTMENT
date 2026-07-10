@@ -8,6 +8,7 @@ import transactionsRouter from "./transactions";
 import authRouter from "./auth";
 import investmentsRouter from "./investments";
 import depositRouter from "./deposit";
+import adminRouter from "./admin";
 import profitRouter from "./profit";
 import userTransactionsRouter from "./userTransactions";
 
@@ -22,6 +23,7 @@ router.use(transactionsRouter);
 router.use(authRouter);
 router.use(investmentsRouter);
 router.use(depositRouter);
+router.use(adminRouter);
 router.use(profitRouter);
 router.use(userTransactionsRouter);
 
