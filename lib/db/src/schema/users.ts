@@ -6,10 +6,21 @@ export const usersTable = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
   name: text("name").notNull(),
   email: text("email").notNull().unique(),
-  /** bcrypt / argon2 hash — never returned to clients */
+  /** bcrypt hash — never returned to clients */
   passwordHash: text("password_hash").notNull(),
   /** Account balance in Ethiopian Birr, stored as exact numeric */
   balanceEtb: numeric("balance_etb", { precision: 20, scale: 2 })
+    .notNull()
+    .default("0.00"),
+  /**
+   * Sum of daily_profit_etb across all active investments.
+   * Updated whenever an investment is created, completed, or cancelled.
+   * Lets the frontend show "you earn X ETB/day" without an aggregation query.
+   */
+  totalDailyEarningsEtb: numeric("total_daily_earnings_etb", {
+    precision: 20,
+    scale: 2,
+  })
     .notNull()
     .default("0.00"),
   createdAt: timestamp("created_at", { withTimezone: true })
@@ -24,12 +35,14 @@ export const insertUserSchema = createInsertSchema(usersTable, {
   email: z.email(),
   passwordHash: z.string().min(1),
   balanceEtb: z.string().optional(),
+  totalDailyEarningsEtb: z.string().optional(),
 }).omit({ id: true, createdAt: true });
 
 export const updateUserSchema = z.object({
   name: z.string().min(1).optional(),
   email: z.email().optional(),
   balanceEtb: z.string().optional(),
+  totalDailyEarningsEtb: z.string().optional(),
 });
 
 /** Full DB row — includes passwordHash. For internal/server use only. */

@@ -4,5 +4,6 @@ export * from "./holdings";
 export * from "./transactions";
 // Investment platform tables
 export * from "./users";
+export * from "./investment-plans";
 export * from "./investments";
 export * from "./user-transactions";

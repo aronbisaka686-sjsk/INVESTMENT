@@ -15,6 +15,20 @@
       "when": 1783573142259,
       "tag": "0001_easy_bruce_banner",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1783670640794,
+      "tag": "0002_big_hellion",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1783670640900,
+      "tag": "0003_investment_plans_and_columns",
+      "breakpoints": true
     }
   ]
 }
