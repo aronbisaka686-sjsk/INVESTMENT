@@ -7,6 +7,7 @@ import transactionsRouter from "./transactions";
 // Investment-platform routes
 import authRouter from "./auth";
 import investmentsRouter from "./investments";
+import depositRouter from "./deposit";
 import profitRouter from "./profit";
 import userTransactionsRouter from "./userTransactions";
 
@@ -20,6 +21,7 @@ router.use(transactionsRouter);
 // Investment-platform routes
 router.use(authRouter);
 router.use(investmentsRouter);
+router.use(depositRouter);
 router.use(profitRouter);
 router.use(userTransactionsRouter);
 
